@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flex Warch Premium</title>
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.85);
+        }
+        body {
+            font-family: 'Hind Siliguri', 'Inter', sans-serif;
+            background: linear-gradient(135deg, #fff1f2 0%, #fce7f3 100%);
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            color: #1e293b;
+        }
+        
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 10px 25px -5px rgba(244, 63, 94, 0.1);
+        }
+
+        .btn-press:active { transform: scale(0.96); }
+        ::-webkit-scrollbar { width: 0px; }
+        
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;  
+            overflow: hidden;
+        }
+
+        /* Detail Modal Transitions */
+        #detail-modal-body {
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #detail-modal-body.translate-y-full {
+            transform: translateY(100%);
+        }
+        #detail-modal-body:not(.translate-y-full) {
+            transform: translateY(0);
+        }
+
+        /* Hot Glowing Button Effect */
+        .btn-glow-hot {
+            box-shadow: 0 0 20px rgba(244, 63, 94, 0.5);
+            animation: pulse-glow-hot 2s infinite;
+        }
+        @keyframes pulse-glow-hot {
+            0% { box-shadow: 0 0 15px rgba(244, 63, 94, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(244, 63, 94, 0.8); }
+            100% { box-shadow: 0 0 15px rgba(244, 63, 94, 0.4); }
+        }
+    </style>
+</head>
+<body class="h-screen flex justify-center overflow-hidden">
+
+    <div class="w-full max-w-md h-full relative flex flex-col" id="app-container">
+        
+        <!-- Premium Header (Hot Theme) -->
+        <div class="glass px-5 py-4 flex items-center justify-between z-20 absolute top-0 w-full rounded-b-3xl shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-rose-500 to-orange-500 flex items-center justify-center text-white shadow-lg border border-rose-300">
+                    <i class="fa-solid fa-fire-flame-curved"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-slate-800 text-lg tracking-tight leading-none">Flex Warch 🍑</h1>
+                    <p class="text-[11px] text-rose-500 font-medium">হট কন্টেন্ট আনলক করুন</p>
+                </div>
+            </div>
+            <div class="bg-rose-50 text-rose-600 px-3 py-1.5 rounded-full text-[10px] font-bold border border-rose-100 flex items-center gap-1.5 shadow-sm">
+                <i class="fa-solid fa-circle text-[8px] animate-pulse"></i> Live
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 overflow-y-auto pt-24 pb-10 px-5 scroll-smooth relative" id="main-content">
+            
+            <!-- Skeleton Loader -->
+            <div id="skeleton-loader" class="space-y-4">
+                <div class="bg-white rounded-3xl p-3 flex gap-4 items-center shadow-sm animate-pulse">
+                    <div class="w-32 h-20 bg-rose-50 rounded-2xl"></div>
+                    <div class="flex-1 space-y-2 py-1">
+                        <div class="h-4 bg-slate-200 rounded w-3/4"></div>
+                        <div class="h-3 bg-slate-100 rounded w-1/2"></div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-3xl p-3 flex gap-4 items-center shadow-sm animate-pulse">
+                    <div class="w-32 h-20 bg-rose-50 rounded-2xl"></div>
+                    <div class="flex-1 space-y-2 py-1">
+                        <div class="h-4 bg-slate-200 rounded w-5/6"></div>
+                        <div class="h-3 bg-slate-100 rounded w-1/3"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content List -->
+            <div id="locked-content-list" class="space-y-4 hidden">
+                <!-- Dynamically injected items -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal for Premium Content -->
+    <div id="content-detail-modal" class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm hidden flex items-end justify-center">
+        <div class="bg-white rounded-t-[2.5rem] w-full max-w-md p-6 shadow-2xl flex flex-col max-h-[85vh] overflow-y-auto translate-y-full relative" id="detail-modal-body">
+            
+            <!-- Drag Handle / Close -->
+            <div class="absolute top-3 left-1/2 transform -translate-x-1/2 w-12 h-1.5 bg-slate-200 rounded-full cursor-pointer" onclick="closeDetailModal()"></div>
+            
+            <div class="flex justify-between items-center mt-4 mb-5">
+                <h3 class="text-lg font-bold text-slate-800">কন্টেন্ট টাস্কসমূহ</h3>
+                <button onclick="closeDetailModal()" class="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 hover:bg-rose-100 transition">
+                    <i class="fa-solid fa-times text-sm"></i>
+                </button>
+            </div>
+            
+            <!-- Thumbnail & Title -->
+            <div class="flex gap-4 items-center bg-rose-50/50 p-4 rounded-2xl border border-rose-50 mb-6 shadow-inner">
+                <img id="detail-thumbnail" src="https://placehold.co/100" class="w-20 h-20 rounded-xl object-cover shadow-sm bg-rose-100">
+                <div class="flex-1 min-w-0">
+                    <h4 id="detail-title" class="font-bold text-slate-800 text-[15px] leading-snug line-clamp-2">...</h4>
+                    <button id="detail-share-btn" class="mt-2 text-rose-600 bg-white px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 border border-rose-100 btn-press shadow-sm">
+                        <i class="fa-solid fa-link"></i> লিংক কপি করুন
+                    </button>
+                </div>
+            </div>
+
+            <!-- Ad Task Serial List -->
+            <div id="detail-tasks-list" class="space-y-3 mb-8">
+                <!-- Dynamic Ad Task Rows -->
+            </div>
+
+            <!-- Action button (Progressive) -->
+            <div class="mt-auto relative">
+                <button id="detail-download-btn" disabled class="relative overflow-hidden w-full bg-slate-100 text-slate-500 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all duration-500">
+                    <!-- Progress Fill Layer -->
+                    <div id="btn-progress-fill" class="absolute left-0 top-0 h-full bg-gradient-to-r from-rose-500 to-orange-500 transition-all duration-700 ease-out" style="width: 0%;"></div>
+                    <!-- Text Layer -->
+                    <span class="relative z-10 flex items-center gap-2" id="btn-text">
+                        <i class="fa-solid fa-lock"></i> 0% সম্পন্ন...
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-[-60px] left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-5 py-3.5 rounded-full shadow-2xl transition-all duration-400 z-50 flex items-center gap-3 min-w-[220px] justify-center border border-slate-700">
+        <i id="toast-icon" class="fa-solid fa-check-circle text-rose-400 text-lg"></i>
+        <span id="toast-msg" class="font-bold text-sm tracking-wide">সফল হয়েছে</span>
+    </div>
+
+    <script>
+        const BOT_USERNAME = "Flex_Earningbot"; 
+        const BOT_APP_NAME = "app"; 
+        
+        // --- Firebase Config ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAr4enOTyCZHw739nm9kNPV0s7i97EOPcU",
+            authDomain: "ed-salami.firebaseapp.com",
+            projectId: "ed-salami",
+            storageBucket: "ed-salami.firebasestorage.app",
+            messagingSenderId: "233356363861",
+            appId: "1:233356363861:web:7d653743bd7ca78f722cdc"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const tg = window.Telegram.WebApp;
+
+        let lockedContentData = [];
+        let activeContentItem = null;
+        let currentUser = null;
+        let userData = {};
+        
+        // Ad Settings
+        let appSettings = {
+            monetagZoneId: "10487556", 
+            gigapubId: "5851"
+        };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            tg.ready();
+            tg.expand();
+            tg.setHeaderColor('#ffffff');
+            tg.setBackgroundColor('#fff1f2');
+
+            // --- Super Silent Background Identity System ---
+            let tgUser = tg.initDataUnsafe?.user;
+            let localDeviceId = localStorage.getItem('flex_warch_id');
+            
+            if (!localDeviceId) {
+                // Generate a random ID if not exists
+                localDeviceId = 'user_' + Math.random().toString(36).substr(2, 9) + Date.now();
+                localStorage.setItem('flex_warch_id', localDeviceId);
+            }
+
+            // Always prioritize Telegram ID if available, otherwise use local ID smoothly
+            if (tgUser && tgUser.id) {
+                currentUser = { id: tgUser.id.toString(), username: tgUser.first_name || "User" };
+            } else {
+                currentUser = { id: localDeviceId, username: "User" };
+            }
+            
+            // Load Ads Scripts
+            loadAdScript('monetag', appSettings.monetagZoneId);
+            loadAdScript('gigapub', appSettings.gigapubId);
+
+            await initApp();
+        });
+
+        function loadAdScript(network, id) {
+            const script = document.createElement('script');
+            if (network === 'monetag') {
+                script.src = '//libtl.com/sdk.js';
+                script.setAttribute('data-zone', id);
+                script.setAttribute('data-sdk', 'show_' + id);
+            } else {
+                script.src = 'https://ad.gigapub.tech/script?id=' + id;
+            }
+            document.head.appendChild(script);
+        }
+
+        async function initApp() {
+            const userRef = db.collection('users').doc(currentUser.id.toString());
+            const userSnap = await userRef.get();
+
+            if (!userSnap.exists) {
+                await userRef.set({
+                    id: currentUser.id,
+                    username: currentUser.username,
+                    lastActive: new Date().toISOString(),
+                    unlocked_items: {}
+                });
+            } else {
+                // Update username if we finally got TG Auth in a later session
+                if(currentUser.username !== "User") {
+                    userRef.update({ username: currentUser.username });
+                }
+            }
+
+            // Local Cache for Instant Load
+            const cachedData = localStorage.getItem('flexContents');
+            if (cachedData) {
+                lockedContentData = JSON.parse(cachedData);
+                document.getElementById('skeleton-loader').classList.add('hidden');
+                document.getElementById('locked-content-list').classList.remove('hidden');
+                renderLockedContent();
+                checkDeepLink();
+            }
+
+            // Real-time Listeners
+            db.collection('locked_content').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+                lockedContentData = [];
+                snapshot.forEach(doc => lockedContentData.push({ id: doc.id, ...doc.data() }));
+                
+                // Update Cache
+                localStorage.setItem('flexContents', JSON.stringify(lockedContentData));
+                
+                document.getElementById('skeleton-loader').classList.add('hidden');
+                document.getElementById('locked-content-list').classList.remove('hidden');
+                renderLockedContent();
+                
+                if (activeContentItem) {
+                    const updatedActive = lockedContentData.find(i => i.id === activeContentItem.id);
+                    if (updatedActive) {
+                        activeContentItem = updatedActive;
+                        renderDetailTasks(activeContentItem);
+                    }
+                }
+            });
+
+            db.collection('users').doc(currentUser.id.toString()).onSnapshot(docSnap => {
+                if (docSnap.exists) {
+                    userData = docSnap.data();
+                    if (activeContentItem) renderDetailTasks(activeContentItem);
+                    // Refresh Main List to show lock/unlock statuses properly
+                    renderLockedContent();
+                }
+            });
+
+            // Initial Deep Link Check if not cached
+            if(!cachedData) {
+                setTimeout(checkDeepLink, 1000);
+            }
+        }
+
+        function checkDeepLink() {
+            const startParam = tg.initDataUnsafe?.start_param || "";
+            if (startParam && startParam.startsWith('content_')) {
+                const contentId = startParam.replace('content_', '');
+                setTimeout(() => openDetailModal(contentId), 300);
+            }
+        }
+
+        function getContentStatus(item) {
+            const required = parseInt(item.required_ads || 2);
+            let itemState = userData.unlocked_items?.[item.id];
+            let progress = 0;
+            let unlockedAt = null;
+
+            if (typeof itemState === 'object' && itemState !== null) {
+                progress = itemState.progress || 0;
+                unlockedAt = itemState.unlockedAt || null;
+            } else if (typeof itemState === 'number') {
+                progress = itemState;
+            }
+
+            if (unlockedAt) {
+                const elapsed = Date.now() - unlockedAt;
+                // 1 HOUR Expiry Logic (60 minutes * 60 seconds * 1000 milliseconds)
+                if (elapsed >= 60 * 60 * 1000) { 
+                    progress = 0;
+                    unlockedAt = null;
+                }
+            }
+
+            const isUnlocked = progress >= required;
+            return { progress, unlockedAt, isUnlocked, required };
+        }
+
+        function renderLockedContent() {
+            const container = document.getElementById('locked-content-list');
+            container.innerHTML = '';
+
+            if (lockedContentData.length === 0) {
+                container.innerHTML = `<div class="text-center text-sm text-slate-400 py-10">কোনো কন্টেন্ট নেই</div>`;
+                return;
+            }
+
+            lockedContentData.forEach(item => {
+                const { progress, isUnlocked, required } = getContentStatus(item);
+                const percentage = Math.min((progress / required) * 100, 100);
+
+                const html = `
+                    <div onclick="openDetailModal('${item.id}')" class="bg-white rounded-3xl p-3 flex gap-4 items-center shadow-sm border border-rose-50 cursor-pointer active:scale-[0.98] transition-transform group relative overflow-hidden">
+                        <div class="relative w-28 h-20 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-100 shadow-sm">
+                            <img src="${item.thumbnail || 'https://placehold.co/200'}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                            ${isUnlocked 
+                                ? `<div class="absolute inset-0 bg-rose-500/30 flex items-center justify-center backdrop-blur-[2px]"><i class="fa-solid fa-unlock text-white text-lg drop-shadow-md"></i></div>`
+                                : ``
+                            }
+                        </div>
+                        
+                        <div class="flex-1 min-w-0 pr-1">
+                            <h4 class="font-bold text-slate-800 text-[14px] leading-snug line-clamp-2 mb-2">${item.title}</h4>
+                            
+                            <!-- Hot Progress Bar -->
+                            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-gradient-to-r from-rose-400 to-orange-400 h-full rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                            </div>
+                            <div class="flex justify-between items-center mt-1">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Progress</span>
+                                <span class="text-[10px] font-bold ${isUnlocked ? 'text-rose-500' : 'text-slate-500'} font-inter">${progress}/${required}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        function openDetailModal(itemId) {
+            const item = lockedContentData.find(i => i.id === itemId);
+            if (!item) return showToast("কন্টেন্ট পাওয়া যায়নি", "error");
+
+            activeContentItem = item;
+            document.getElementById('detail-thumbnail').src = item.thumbnail || "https://placehold.co/100";
+            document.getElementById('detail-title').innerText = item.title;
+            
+            const shareLink = `https://t.me/${BOT_USERNAME}/${BOT_APP_NAME}?startapp=content_${item.id}`;
+            document.getElementById('detail-share-btn').setAttribute('onclick', `copyText('${shareLink}')`);
+            
+            renderDetailTasks(item);
+
+            const modal = document.getElementById('content-detail-modal');
+            const body = document.getElementById('detail-modal-body');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => body.classList.remove('translate-y-full'), 50);
+        }
+
+        function closeDetailModal() {
+            const modal = document.getElementById('content-detail-modal');
+            const body = document.getElementById('detail-modal-body');
+            
+            body.classList.add('translate-y-full');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                activeContentItem = null;
+            }, 400);
+        }
+
+        function renderDetailTasks(item) {
+            const container = document.getElementById('detail-tasks-list');
+            container.innerHTML = '';
+            
+            const { progress, isUnlocked, required } = getContentStatus(item);
+            
+            for (let i = 0; i < required; i++) {
+                const isCompleted = i < progress;
+                const isActive = i === progress;
+                
+                const network = (i % 2 === 0) ? 'monetag' : 'gigapub';
+                const platformName = network === 'monetag' ? 'AD Server 1' : 'AD Server 2';
+                
+                let btnHtml = '';
+                if (isCompleted) {
+                    btnHtml = `<span class="text-rose-500 font-extrabold text-[12px]"><i class="fa-solid fa-circle-check"></i> ডান</span>`;
+                } else if (isActive) {
+                    btnHtml = `<button onclick="watchTaskAd('${item.id}', '${network}')" class="bg-gradient-to-r from-rose-500 to-orange-500 text-white text-[11px] px-4 py-2 rounded-xl font-bold shadow-md shadow-rose-200 btn-press">কমপ্লিট করুন</button>`;
+                } else {
+                    btnHtml = `<span class="text-slate-300 font-bold text-[18px]"><i class="fa-solid fa-lock"></i></span>`;
+                }
+
+                const html = `
+                    <div class="p-3.5 rounded-2xl flex items-center justify-between border ${isActive ? 'bg-rose-50 border-rose-200 shadow-sm' : 'bg-slate-50 border-slate-100'} transition-all">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isCompleted ? 'bg-rose-100 text-rose-600' : isActive ? 'bg-rose-500 text-white shadow-md' : 'bg-slate-200 text-slate-400'}">
+                                ${i + 1}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-700 text-[13px]">${platformName}</h4>
+                                <p class="text-[9px] text-slate-400">টাস্ক সম্পন্ন করুন</p>
+                            </div>
+                        </div>
+                        <div>${btnHtml}</div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+            }
+
+            // Progress Fill Button Logic
+            const percentage = Math.min((progress / required) * 100, 100);
+            const downloadBtn = document.getElementById('detail-download-btn');
+            const btnFill = document.getElementById('btn-progress-fill');
+            const btnText = document.getElementById('btn-text');
+
+            btnFill.style.width = `${percentage}%`;
+
+            if (isUnlocked) {
+                downloadBtn.className = "relative overflow-hidden w-full bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 btn-press btn-glow-hot transition-all duration-300 cursor-pointer shadow-lg";
+                btnText.innerHTML = `<i class="fa-solid fa-fire fa-bounce text-lg"></i> এখনই দেখুন`;
+                btnFill.style.opacity = "0"; 
+                downloadBtn.setAttribute('onclick', `tg.openLink('${item.target_url}')`);
+            } else {
+                downloadBtn.className = "relative overflow-hidden w-full bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 cursor-not-allowed transition-all duration-300 border border-slate-200 shadow-inner";
+                btnFill.style.opacity = "1";
+                
+                if(percentage > 50) {
+                    btnText.className = "relative z-10 flex items-center gap-2 text-white drop-shadow-md";
+                } else {
+                    btnText.className = "relative z-10 flex items-center gap-2";
+                }
+
+                btnText.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> ${percentage.toFixed(0)}% আনলক হয়েছে...`;
+                downloadBtn.removeAttribute('onclick');
+            }
+        }
+
+        async function watchTaskAd(itemId, network) {
+            showToast("অ্যাড লোড হচ্ছে...", "info");
+            let adStartTime = Date.now();
+
+            try {
+                if (network === 'monetag') {
+                    const showFn = window['show_' + appSettings.monetagZoneId];
+                    if (typeof showFn === 'function') await showFn();
+                    else await new Promise(r => setTimeout(r, 12000));
+                } else {
+                    if (typeof window.showGiga === 'function') await window.showGiga();
+                    else await new Promise(r => setTimeout(r, 12000));
+                }
+
+                if (Date.now() - adStartTime < 10000) {
+                    return showToast("ওয়ার্নিং: ফুল অ্যাড না দেখলে টাস্ক কাউন্ট হবে না!", "error");
+                }
+
+                // Update Progress
+                showToast("যাচাই করা হচ্ছে...", "info");
+                const uRef = db.collection('users').doc(currentUser.id.toString());
+                let unlockedItems = userData.unlocked_items || {};
+                let currentProgress = unlockedItems[itemId]?.progress || 0;
+                let newProgress = currentProgress + 1;
+                
+                const item = lockedContentData.find(i => i.id === itemId);
+                let unlockedAt = (newProgress >= parseInt(item.required_ads || 2)) ? Date.now() : null;
+                
+                unlockedItems[itemId] = { progress: newProgress, unlockedAt: unlockedAt };
+                
+                let updateData = {
+                    unlocked_items: unlockedItems,
+                    lastActive: new Date().toISOString()
+                };
+                
+                await uRef.update(updateData);
+                showToast("টাস্ক সফলভাবে সম্পন্ন হয়েছে!", "success");
+
+            } catch (e) {
+                showToast("অ্যাড সম্পন্ন হয়নি!", "error");
+            }
+        }
+
+        function copyText(text) {
+            navigator.clipboard.writeText(text);
+            showToast("লিংক কপি করা হয়েছে!", "success");
+        }
+
+        function showToast(msg, type) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            const i = document.getElementById('toast-icon');
+            i.className = type === 'error' ? 'fa-solid fa-circle-exclamation text-rose-500 text-lg' :
+                          type === 'info' ? 'fa-solid fa-circle-info text-blue-400 text-lg' :
+                          'fa-solid fa-check-circle text-rose-400 text-lg';
+            
+            t.style.top = '25px';
+            setTimeout(() => t.style.top = '-80px', 3000);
+        }
+    </script>
+</body>
+</html>
