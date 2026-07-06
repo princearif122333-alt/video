@@ -68,7 +68,6 @@
 
     <div class="w-full max-w-md h-full relative flex flex-col" id="app-container">
         
-        <!-- Premium Header (Hot Theme) -->
         <div class="glass px-5 py-4 flex items-center justify-between z-20 absolute top-0 w-full rounded-b-3xl shadow-sm">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-rose-500 to-orange-500 flex items-center justify-center text-white shadow-lg border border-rose-300">
@@ -84,10 +83,8 @@
             </div>
         </div>
 
-        <!-- Main Content Area -->
         <div class="flex-1 overflow-y-auto pt-24 pb-10 px-5 scroll-smooth relative" id="main-content">
             
-            <!-- Skeleton Loader -->
             <div id="skeleton-loader" class="space-y-4">
                 <div class="bg-white rounded-3xl p-3 flex gap-4 items-center shadow-sm animate-pulse">
                     <div class="w-32 h-20 bg-rose-50 rounded-2xl"></div>
@@ -105,18 +102,14 @@
                 </div>
             </div>
 
-            <!-- Content List -->
             <div id="locked-content-list" class="space-y-4 hidden">
-                <!-- Dynamically injected items -->
-            </div>
+                </div>
         </div>
     </div>
 
-    <!-- Details Modal for Premium Content -->
     <div id="content-detail-modal" class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm hidden flex items-end justify-center">
         <div class="bg-white rounded-t-[2.5rem] w-full max-w-md p-6 shadow-2xl flex flex-col max-h-[85vh] overflow-y-auto translate-y-full relative" id="detail-modal-body">
             
-            <!-- Drag Handle / Close -->
             <div class="absolute top-3 left-1/2 transform -translate-x-1/2 w-12 h-1.5 bg-slate-200 rounded-full cursor-pointer" onclick="closeDetailModal()"></div>
             
             <div class="flex justify-between items-center mt-4 mb-5">
@@ -126,7 +119,6 @@
                 </button>
             </div>
             
-            <!-- Thumbnail & Title -->
             <div class="flex gap-4 items-center bg-rose-50/50 p-4 rounded-2xl border border-rose-50 mb-6 shadow-inner">
                 <img id="detail-thumbnail" src="https://placehold.co/100" class="w-20 h-20 rounded-xl object-cover shadow-sm bg-rose-100">
                 <div class="flex-1 min-w-0">
@@ -137,17 +129,12 @@
                 </div>
             </div>
 
-            <!-- Ad Task Serial List -->
             <div id="detail-tasks-list" class="space-y-3 mb-8">
-                <!-- Dynamic Ad Task Rows -->
-            </div>
+                </div>
 
-            <!-- Action button (Progressive) -->
             <div class="mt-auto relative">
                 <button id="detail-download-btn" disabled class="relative overflow-hidden w-full bg-slate-100 text-slate-500 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all duration-500">
-                    <!-- Progress Fill Layer -->
                     <div id="btn-progress-fill" class="absolute left-0 top-0 h-full bg-gradient-to-r from-rose-500 to-orange-500 transition-all duration-700 ease-out" style="width: 0%;"></div>
-                    <!-- Text Layer -->
                     <span class="relative z-10 flex items-center gap-2" id="btn-text">
                         <i class="fa-solid fa-lock"></i> 0% সম্পন্ন...
                     </span>
@@ -156,7 +143,6 @@
         </div>
     </div>
 
-    <!-- Toast Notification -->
     <div id="toast" class="fixed top-[-60px] left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-5 py-3.5 rounded-full shadow-2xl transition-all duration-400 z-50 flex items-center gap-3 min-w-[220px] justify-center border border-slate-700">
         <i id="toast-icon" class="fa-solid fa-check-circle text-rose-400 text-lg"></i>
         <span id="toast-msg" class="font-bold text-sm tracking-wide">সফল হয়েছে</span>
@@ -356,7 +342,6 @@
                         <div class="flex-1 min-w-0 pr-1">
                             <h4 class="font-bold text-slate-800 text-[14px] leading-snug line-clamp-2 mb-2">${item.title}</h4>
                             
-                            <!-- Hot Progress Bar -->
                             <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                                 <div class="bg-gradient-to-r from-rose-400 to-orange-400 h-full rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
                             </div>
@@ -453,7 +438,25 @@
                 downloadBtn.className = "relative overflow-hidden w-full bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 btn-press btn-glow-hot transition-all duration-300 cursor-pointer shadow-lg";
                 btnText.innerHTML = `<i class="fa-solid fa-fire fa-bounce text-lg"></i> এখনই দেখুন`;
                 btnFill.style.opacity = "0"; 
-                downloadBtn.setAttribute('onclick', `tg.openLink('${item.target_url}')`);
+                
+                // ডাইনামিক এবং সেফ ক্লিক ইভেন্ট
+                downloadBtn.onclick = function() {
+                    const url = item.target_url;
+                    if (!url || url === "undefined") {
+                        showToast("কোনো লিংক পাওয়া যায়নি!", "error");
+                        return;
+                    }
+                    try {
+                        // চেক করা হচ্ছে অ্যাপটি টেলিগ্রামের ভেতরে চলছে কি না
+                        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+                            tg.openLink(url);
+                        } else {
+                            window.open(url, '_blank');
+                        }
+                    } catch (e) {
+                        window.open(url, '_blank');
+                    }
+                };
             } else {
                 downloadBtn.className = "relative overflow-hidden w-full bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 cursor-not-allowed transition-all duration-300 border border-slate-200 shadow-inner";
                 btnFill.style.opacity = "1";
@@ -465,7 +468,7 @@
                 }
 
                 btnText.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> ${percentage.toFixed(0)}% আনলক হয়েছে...`;
-                downloadBtn.removeAttribute('onclick');
+                downloadBtn.onclick = null; // ইভেন্ট রিমুভ করা হলো
             }
         }
 
