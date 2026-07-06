@@ -435,6 +435,9 @@
             btnFill.style.width = `${percentage}%`;
 
             if (isUnlocked) {
+                // বাটনটিকে ক্লিক করার উপযোগী করার জন্য সচল করা হলো
+                downloadBtn.disabled = false;
+
                 downloadBtn.className = "relative overflow-hidden w-full bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 btn-press btn-glow-hot transition-all duration-300 cursor-pointer shadow-lg";
                 btnText.innerHTML = `<i class="fa-solid fa-fire fa-bounce text-lg"></i> এখনই দেখুন`;
                 btnFill.style.opacity = "0"; 
@@ -458,6 +461,9 @@
                     }
                 };
             } else {
+                // আনলক না হওয়া পর্যন্ত বাটনটি ক্লিক করা যাবে না
+                downloadBtn.disabled = true;
+
                 downloadBtn.className = "relative overflow-hidden w-full bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 cursor-not-allowed transition-all duration-300 border border-slate-200 shadow-inner";
                 btnFill.style.opacity = "1";
                 
@@ -473,25 +479,27 @@
         }
 
         async function watchTaskAd(itemId, network) {
-            showToast("অ্যাড লোড হচ্ছে...", "info");
-            let adStartTime = Date.now();
+            showToast("অ্যাড লোড হচ্ছে, দয়া করে অপেক্ষা করুন...", "info");
 
             try {
+                // ১. অ্যাড ট্রিগার করা
                 if (network === 'monetag') {
                     const showFn = window['show_' + appSettings.monetagZoneId];
-                    if (typeof showFn === 'function') await showFn();
-                    else await new Promise(r => setTimeout(r, 12000));
+                    if (typeof showFn === 'function') {
+                        showFn(); 
+                    }
                 } else {
-                    if (typeof window.showGiga === 'function') await window.showGiga();
-                    else await new Promise(r => setTimeout(r, 12000));
+                    if (typeof window.showGiga === 'function') {
+                        window.showGiga();
+                    }
                 }
 
-                if (Date.now() - adStartTime < 10000) {
-                    return showToast("ওয়ার্নিং: ফুল অ্যাড না দেখলে টাস্ক কাউন্ট হবে না!", "error");
-                }
+                // ২. ১২ সেকেন্ড বাধ্যতামূলক প্রমিজ ডিলে (অ্যাড দেখার সময়টুকু অপেক্ষা করা)
+                await new Promise(resolve => setTimeout(resolve, 12000));
 
-                // Update Progress
+                // ৩. ১২ সেকেন্ড পর ডাটাবেজ আপডেট হবে
                 showToast("যাচাই করা হচ্ছে...", "info");
+                
                 const uRef = db.collection('users').doc(currentUser.id.toString());
                 let unlockedItems = userData.unlocked_items || {};
                 let currentProgress = unlockedItems[itemId]?.progress || 0;
@@ -511,7 +519,7 @@
                 showToast("টাস্ক সফলভাবে সম্পন্ন হয়েছে!", "success");
 
             } catch (e) {
-                showToast("অ্যাড সম্পন্ন হয়নি!", "error");
+                showToast("কোনো একটি সমস্যা হয়েছে, আবার চেষ্টা করুন!", "error");
             }
         }
 
