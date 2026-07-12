@@ -1,547 +1,565 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flex Warch Premium</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhaleDrop - Super Admin Panel</title>
     
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.85);
+            --bg-dark: #070A15;      
+            --bg-card: #151B2B;      
+            --purple-btn: #7C3AED;
+            --text-main: #FFFFFF;
+            --text-muted: #8E9BAE;
+            --success: #10B981;
+            --danger: #EF4444;
+            --star-gold: #FBBF24;
+            --border-color: rgba(255, 255, 255, 0.05);
         }
-        body {
-            font-family: 'Hind Siliguri', 'Inter', sans-serif;
-            background: linear-gradient(135deg, #fff1f2 0%, #fce7f3 100%);
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            color: #1e293b;
-        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); padding: 20px; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); }
+        .header h1 { font-size: 24px; color: #FFF; display: flex; align-items: center; gap: 10px; }
+        .header h1 i { color: #0EA5E9; filter: drop-shadow(0 0 10px rgba(14,165,233,0.5));}
+
+        .container { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+        @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
+
+        .card { background: var(--bg-card); border-radius: 16px; padding: 24px; border: 1px solid var(--border-color); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+        .card-title { font-size: 18px; font-weight: 700; color: #FFF; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
         
-        .glass {
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 10px 25px -5px rgba(244, 63, 94, 0.1);
-        }
-
-        .btn-press:active { transform: scale(0.96); }
-        ::-webkit-scrollbar { width: 0px; }
+        .form-group { margin-bottom: 16px; position: relative;}
+        .form-group label { display: block; font-size: 13px; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
+        .form-control { width: 100%; background: #0B0E17; border: 1px solid var(--border-color); color: #FFF; padding: 12px 16px; border-radius: 10px; font-size: 14px; outline: none; transition: 0.2s; }
+        .form-control:focus { border-color: var(--purple-btn); }
         
-        .line-clamp-2 {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;  
-            overflow: hidden;
-        }
+        /* AI Button */
+        .btn-ai { position: absolute; right: 8px; top: 32px; background: linear-gradient(135deg, #A855F7, #7C3AED); color: #FFF; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; box-shadow: 0 0 10px rgba(168, 85, 247, 0.4); transition: 0.2s;}
+        .btn-ai:active { transform: scale(0.9); }
 
-        /* Detail Modal Transitions */
-        #detail-modal-body {
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        #detail-modal-body.translate-y-full {
-            transform: translateY(100%);
-        }
-        #detail-modal-body:not(.translate-y-full) {
-            transform: translateY(0);
-        }
+        /* Type Selector */
+        .type-selector { display: flex; gap: 10px; margin-bottom: 20px; }
+        .type-opt { flex: 1; padding: 12px; background: #0B0E17; border: 1px solid var(--border-color); border-radius: 10px; text-align: center; cursor: pointer; font-size: 14px; font-weight: 700; color: var(--text-muted); transition: 0.3s; }
+        .type-opt.active { background: rgba(16, 185, 129, 0.1); border-color: var(--success); color: var(--success); }
+        .type-opt.active.premium { background: rgba(245, 158, 11, 0.1); border-color: var(--warning); color: var(--warning); }
 
-        /* Hot Glowing Button Effect */
-        .btn-glow-hot {
-            box-shadow: 0 0 20px rgba(244, 63, 94, 0.5);
-            animation: pulse-glow-hot 2s infinite;
-        }
-        @keyframes pulse-glow-hot {
-            0% { box-shadow: 0 0 15px rgba(244, 63, 94, 0.4); }
-            50% { box-shadow: 0 0 25px rgba(244, 63, 94, 0.8); }
-            100% { box-shadow: 0 0 15px rgba(244, 63, 94, 0.4); }
-        }
+        /* Image Preview */
+        .img-preview-box { width: 100%; height: 160px; background: #0B0E17; border: 2px dashed var(--border-color); border-radius: 10px; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; overflow: hidden; position: relative; }
+        .img-preview-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        .img-preview-text { color: var(--text-muted); font-size: 13px; position: absolute; pointer-events: none; }
+
+        /* Sections */
+        #taskBuilderSection, #premiumSection { transition: 0.3s; }
+        .premium-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        /* Task Builder */
+        .task-builder { border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; background: rgba(0,0,0,0.2); margin-bottom: 20px; }
+        .task-controls { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+        .btn-small { padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; color: #FFF; transition: 0.2s; }
+        .btn-small:active { transform: scale(0.95); }
+        .btn-ad { background: #0EA5E9; } .btn-tg { background: #2AABEE; } .btn-link { background: #A855F7; }
+        
+        .task-list { display: flex; flex-direction: column; gap: 12px; }
+        .task-row { display: flex; gap: 10px; align-items: center; background: #0B0E17; padding: 10px; border-radius: 10px; border: 1px solid var(--border-color); }
+        .task-row input { flex: 1; background: transparent; border: 1px solid var(--border-color); color: #FFF; padding: 8px; border-radius: 6px; font-size: 13px; outline: none;}
+        .task-badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .btn-remove { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+
+        .btn-submit { width: 100%; padding: 16px; border-radius: 12px; font-size: 15px; font-weight: 800; background: var(--success); color: #FFF; border: none; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .btn-submit:disabled { opacity: 0.7; cursor: not-allowed; }
+        
+        .btn-cancel { width: 100%; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 700; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-color); cursor: pointer; transition: 0.2s; display: none; justify-content: center; align-items: center; gap: 8px; margin-top: 10px; }
+        .btn-cancel:hover { background: rgba(255, 255, 255, 0.1); color: #FFF; }
+
+        /* Video List */
+        .video-list { display: flex; flex-direction: column; gap: 12px; }
+        .video-item { display: flex; justify-content: space-between; align-items: center; background: #0B0E17; padding: 12px; border-radius: 12px; border: 1px solid var(--border-color); position: relative; overflow: hidden;}
+        .vi-left { display: flex; align-items: center; gap: 12px; z-index: 2;}
+        .vi-thumb { width: 65px; height: 45px; border-radius: 8px; object-fit: cover; }
+        .vi-title { font-size: 14px; font-weight: 700; color: #FFF; }
+        .vi-tasks { font-size: 11px; color: var(--text-muted); margin-top: 4px; display: flex; gap: 6px; align-items: center;}
+        
+        .badge-mini-prem { background: rgba(245, 158, 11, 0.2); color: var(--warning); padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 800;}
+        .badge-mini-free { background: rgba(16, 185, 129, 0.2); color: var(--success); padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 800;}
     </style>
 </head>
-<body class="h-screen flex justify-center overflow-hidden">
+<body>
 
-    <div class="w-full max-w-md h-full relative flex flex-col" id="app-container">
-        
-        <div class="glass px-5 py-4 flex items-center justify-between z-20 absolute top-0 w-full rounded-b-3xl shadow-sm">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-rose-500 to-orange-500 flex items-center justify-center text-white shadow-lg border border-rose-300">
-                    <i class="fa-solid fa-fire-flame-curved"></i>
-                </div>
-                <div>
-                    <h1 class="font-bold text-slate-800 text-lg tracking-tight leading-none">Flex Warch 🍑</h1>
-                    <p class="text-[11px] text-rose-500 font-medium">হট কন্টেন্ট আনলক করুন</p>
-                </div>
-            </div>
-            <div class="bg-rose-50 text-rose-600 px-3 py-1.5 rounded-full text-[10px] font-bold border border-rose-100 flex items-center gap-1.5 shadow-sm">
-                <i class="fa-solid fa-circle text-[8px] animate-pulse"></i> Live
-            </div>
-        </div>
-
-        <div class="flex-1 overflow-y-auto pt-24 pb-10 px-5 scroll-smooth relative" id="main-content">
-            
-            <div id="skeleton-loader" class="space-y-4">
-                <div class="bg-white rounded-3xl p-3 flex gap-4 items-center shadow-sm animate-pulse">
-                    <div class="w-32 h-20 bg-rose-50 rounded-2xl"></div>
-                    <div class="flex-1 space-y-2 py-1">
-                        <div class="h-4 bg-slate-200 rounded w-3/4"></div>
-                        <div class="h-3 bg-slate-100 rounded w-1/2"></div>
-                    </div>
-                </div>
-                <div class="bg-white rounded-3xl p-3 flex gap-4 items-center shadow-sm animate-pulse">
-                    <div class="w-32 h-20 bg-rose-50 rounded-2xl"></div>
-                    <div class="flex-1 space-y-2 py-1">
-                        <div class="h-4 bg-slate-200 rounded w-5/6"></div>
-                        <div class="h-3 bg-slate-100 rounded w-1/3"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="locked-content-list" class="space-y-4 hidden">
-                </div>
-        </div>
+    <div class="header">
+        <h1><i class="fa-solid fa-microchip"></i> Super Admin Panel</h1>
+        <div style="font-size: 13px; color: var(--success); font-weight: 600;"><i class="fa-solid fa-signal"></i> System Online</div>
     </div>
 
-    <div id="content-detail-modal" class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm hidden flex items-end justify-center">
-        <div class="bg-white rounded-t-[2.5rem] w-full max-w-md p-6 shadow-2xl flex flex-col max-h-[85vh] overflow-y-auto translate-y-full relative" id="detail-modal-body">
+    <div class="container">
+        <div class="card">
+            <div class="card-title" id="formActionTitle"><i class="fa-solid fa-wand-magic-sparkles"></i> Create Content</div>
             
-            <div class="absolute top-3 left-1/2 transform -translate-x-1/2 w-12 h-1.5 bg-slate-200 rounded-full cursor-pointer" onclick="closeDetailModal()"></div>
-            
-            <div class="flex justify-between items-center mt-4 mb-5">
-                <h3 class="text-lg font-bold text-slate-800">কন্টেন্ট টাস্কসমূহ</h3>
-                <button onclick="closeDetailModal()" class="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 hover:bg-rose-100 transition">
-                    <i class="fa-solid fa-times text-sm"></i>
-                </button>
+            <div class="type-selector">
+                <div class="type-opt active" id="optFree" onclick="toggleType('free')"><i class="fa-solid fa-gift"></i> Free (Tasks)</div>
+                <div class="type-opt premium" id="optPremium" onclick="toggleType('premium')"><i class="fa-solid fa-crown"></i> VIP (Paid)</div>
             </div>
-            
-            <div class="flex gap-4 items-center bg-rose-50/50 p-4 rounded-2xl border border-rose-50 mb-6 shadow-inner">
-                <img id="detail-thumbnail" src="https://placehold.co/100" class="w-20 h-20 rounded-xl object-cover shadow-sm bg-rose-100">
-                <div class="flex-1 min-w-0">
-                    <h4 id="detail-title" class="font-bold text-slate-800 text-[15px] leading-snug line-clamp-2">...</h4>
-                    <button id="detail-share-btn" class="mt-2 text-rose-600 bg-white px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 border border-rose-100 btn-press shadow-sm">
-                        <i class="fa-solid fa-link"></i> লিংক কপি করুন
-                    </button>
+
+            <div class="form-group">
+                <label>Video Title</label>
+                <input type="text" id="vidTitle" class="form-control" placeholder="Enter video title...">
+                <button class="btn-ai" onclick="generateAITitle()"><i class="fa-solid fa-brain"></i> AI Suggest</button>
+            </div>
+
+            <div class="form-group">
+                <label>Thumbnail Image (Auto Upload to Link)</label>
+                <div class="img-preview-box">
+                    <div class="img-preview-text" id="previewText"><i class="fa-solid fa-cloud-arrow-up"></i> Tap to upload image</div>
+                    <img id="thumbPreview" src="">
+                    <input type="file" id="thumbFile" accept="image/*" style="opacity: 0; position: absolute; inset: 0; cursor: pointer;" onchange="previewImage(event)">
                 </div>
             </div>
 
-            <div id="detail-tasks-list" class="space-y-3 mb-8">
-                </div>
+            <div class="form-group">
+                <label>Main Video Download / Direct Link</label>
+                <input type="text" id="vidDownloadLink" class="form-control" placeholder="https://...">
+            </div>
 
-            <div class="mt-auto relative">
-                <button id="detail-download-btn" disabled class="relative overflow-hidden w-full bg-slate-100 text-slate-500 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all duration-500">
-                    <div id="btn-progress-fill" class="absolute left-0 top-0 h-full bg-gradient-to-r from-rose-500 to-orange-500 transition-all duration-700 ease-out" style="width: 0%;"></div>
-                    <span class="relative z-10 flex items-center gap-2" id="btn-text">
-                        <i class="fa-solid fa-lock"></i> 0% সম্পন্ন...
-                    </span>
-                </button>
+            <div id="premiumSection" style="display: none;">
+                <div class="premium-inputs">
+                    <div class="form-group">
+                        <label>Price (Telegram Stars)</label>
+                        <input type="number" id="priceStars" class="form-control" placeholder="e.g. 50">
+                    </div>
+                    <div class="form-group">
+                        <label>Price (USDT)</label>
+                        <input type="number" id="priceUsdt" step="0.01" class="form-control" placeholder="e.g. 1.50">
+                    </div>
+                </div>
+            </div>
+
+            <div id="taskBuilderSection" class="task-builder">
+                <label style="display: block; font-size: 13px; color: var(--text-muted); font-weight: 600; margin-bottom: 12px;">Tasks Configuration (Serial)</label>
+                <div class="task-controls">
+                    <button class="btn-small btn-ad" onclick="addTaskRow('ad')"><i class="fa-solid fa-play"></i> Add Ad Task</button>
+                    <button class="btn-small btn-tg" onclick="addTaskRow('telegram')"><i class="fa-brands fa-telegram"></i> Add Telegram</button>
+                    <button class="btn-small btn-link" onclick="addTaskRow('link')"><i class="fa-solid fa-link"></i> Add Link</button>
+                </div>
+                <div class="task-list" id="taskRowsContainer">
+                    </div>
+            </div>
+
+            <button class="btn-submit" id="btnSave" onclick="saveVideoData()"><i class="fa-solid fa-bolt"></i> Publish Content</button>
+            <button class="btn-cancel" id="btnCancelEdit" onclick="cancelEdit()"><i class="fa-solid fa-xmark"></i> Cancel Edit</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><i class="fa-solid fa-server"></i> Database Content</div>
+            <div class="video-list" id="manageVideoList">
+                <div style="text-align: center; color: var(--text-muted); padding: 20px;">Loading database...</div>
             </div>
         </div>
-    </div>
-
-    <div id="toast" class="fixed top-[-60px] left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-5 py-3.5 rounded-full shadow-2xl transition-all duration-400 z-50 flex items-center gap-3 min-w-[220px] justify-center border border-slate-700">
-        <i id="toast-icon" class="fa-solid fa-check-circle text-rose-400 text-lg"></i>
-        <span id="toast-msg" class="font-bold text-sm tracking-wide">সফল হয়েছে</span>
     </div>
 
     <script>
-        const BOT_USERNAME = "Flex_Earningbot"; 
-        const BOT_APP_NAME = "app"; 
-        
         // --- Firebase Config ---
         const firebaseConfig = {
-            apiKey: "AIzaSyAr4enOTyCZHw739nm9kNPV0s7i97EOPcU",
-            authDomain: "ed-salami.firebaseapp.com",
-            projectId: "ed-salami",
-            storageBucket: "ed-salami.firebasestorage.app",
-            messagingSenderId: "233356363861",
-            appId: "1:233356363861:web:7d653743bd7ca78f722cdc"
+            apiKey: "AIzaSyDodc2AO3AXP23dU76tJA_balNaylwoSBc",
+            authDomain: "video-3dadf.firebaseapp.com",
+            projectId: "video-3dadf",
+            storageBucket: "video-3dadf.firebasestorage.app",
+            messagingSenderId: "726233412443",
+            appId: "1:726233412443:web:4b5674128b7baa15f9e07e"
         };
-        firebase.initializeApp(firebaseConfig);
+        
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const tg = window.Telegram.WebApp;
 
-        let lockedContentData = [];
-        let activeContentItem = null;
-        let currentUser = null;
-        let userData = {};
-        
-        // টাস্ক প্রসেসিং লক (মাল্টিপল ক্লিক প্রতিরোধ করতে)
-        let isProcessingTask = false;
-        
-        // Ad Settings - Only Monetag
-        let appSettings = {
-            monetagZoneId: "10487556"
-        };
+        // ImgBB API Key
+        const IMGBB_API_KEY = "15a100357dd1540e4bb3bc03b7ec06d7";
+        let taskCounter = 0;
+        let currentType = 'free'; // 'free' or 'premium'
+        let allExistingTitles = []; // For AI Learning
+        let loadedVideos = {}; // local cache of firebase data
+        let editingVideoId = null; // tracking edit state
+        let currentThumbUrl = ""; // stored URL when editing
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            tg.ready();
-            tg.expand();
-            tg.setHeaderColor('#ffffff');
-            tg.setBackgroundColor('#fff1f2');
+        document.addEventListener('DOMContentLoaded', loadVideos);
 
-            // --- Super Silent Background Identity System ---
-            let tgUser = tg.initDataUnsafe?.user;
-            let localDeviceId = localStorage.getItem('flex_warch_id');
-            
-            if (!localDeviceId) {
-                // Generate a random ID if not exists
-                localDeviceId = 'user_' + Math.random().toString(36).substr(2, 9) + Date.now();
-                localStorage.setItem('flex_warch_id', localDeviceId);
-            }
-
-            // Always prioritize Telegram ID if available, otherwise use local ID smoothly
-            if (tgUser && tgUser.id) {
-                currentUser = { id: tgUser.id.toString(), username: tgUser.first_name || "User" };
+        // --- Toggle Type (Free / Premium) ---
+        function toggleType(type) {
+            currentType = type;
+            if(type === 'free') {
+                document.getElementById('optFree').classList.add('active');
+                document.getElementById('optPremium').classList.remove('active');
+                document.getElementById('taskBuilderSection').style.display = 'block';
+                document.getElementById('premiumSection').style.display = 'none';
             } else {
-                currentUser = { id: localDeviceId, username: "User" };
+                document.getElementById('optPremium').classList.add('active');
+                document.getElementById('optFree').classList.remove('active');
+                document.getElementById('taskBuilderSection').style.display = 'none';
+                document.getElementById('premiumSection').style.display = 'block';
             }
+        }
+
+        // --- Super AI Title Generator Algorithm ---
+        function generateAITitle() {
+            const btn = document.querySelector('.btn-ai');
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Thinking...`;
             
-            // Load Monetag Ad Script
-            loadMonetagScript(appSettings.monetagZoneId);
-
-            await initApp();
-        });
-
-        function loadMonetagScript(id) {
-            const script = document.createElement('script');
-            script.src = '//libtl.com/sdk.js';
-            script.setAttribute('data-zone', id);
-            script.setAttribute('data-sdk', 'show_' + id);
-            document.head.appendChild(script);
-        }
-
-        async function initApp() {
-            const userRef = db.collection('users').doc(currentUser.id.toString());
-            const userSnap = await userRef.get();
-
-            if (!userSnap.exists) {
-                await userRef.set({
-                    id: currentUser.id,
-                    username: currentUser.username,
-                    lastActive: new Date().toISOString(),
-                    unlocked_items: {}
-                });
-            } else {
-                // Update username if we finally got TG Auth in a later session
-                if(currentUser.username !== "User") {
-                    userRef.update({ username: currentUser.username });
-                }
-            }
-
-            // Local Cache for Instant Load
-            const cachedData = localStorage.getItem('flexContents');
-            if (cachedData) {
-                lockedContentData = JSON.parse(cachedData);
-                document.getElementById('skeleton-loader').classList.add('hidden');
-                document.getElementById('locked-content-list').classList.remove('hidden');
-                renderLockedContent();
-                checkDeepLink();
-            }
-
-            // Real-time Listeners
-            db.collection('locked_content').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-                lockedContentData = [];
-                snapshot.forEach(doc => lockedContentData.push({ id: doc.id, ...doc.data() }));
-                
-                // Update Cache
-                localStorage.setItem('flexContents', JSON.stringify(lockedContentData));
-                
-                document.getElementById('skeleton-loader').classList.add('hidden');
-                document.getElementById('locked-content-list').classList.remove('hidden');
-                renderLockedContent();
-                
-                if (activeContentItem) {
-                    const updatedActive = lockedContentData.find(i => i.id === activeContentItem.id);
-                    if (updatedActive) {
-                        activeContentItem = updatedActive;
-                        renderDetailTasks(activeContentItem);
-                    }
-                }
-            });
-
-            db.collection('users').doc(currentUser.id.toString()).onSnapshot(docSnap => {
-                if (docSnap.exists) {
-                    userData = docSnap.data();
-                    if (activeContentItem) renderDetailTasks(activeContentItem);
-                    // Refresh Main List to show lock/unlock statuses properly
-                    renderLockedContent();
-                }
-            });
-
-            // Initial Deep Link Check if not cached
-            if(!cachedData) {
-                setTimeout(checkDeepLink, 1000);
-            }
-        }
-
-        function checkDeepLink() {
-            const startParam = tg.initDataUnsafe?.start_param || "";
-            if (startParam && startParam.startsWith('content_')) {
-                const contentId = startParam.replace('content_', '');
-                setTimeout(() => openDetailModal(contentId), 300);
-            }
-        }
-
-        function getContentStatus(item) {
-            const required = parseInt(item.required_ads || 2);
-            let itemState = userData.unlocked_items?.[item.id];
-            let progress = 0;
-            let unlockedAt = null;
-
-            if (typeof itemState === 'object' && itemState !== null) {
-                progress = itemState.progress || 0;
-                unlockedAt = itemState.unlockedAt || null;
-            } else if (typeof itemState === 'number') {
-                progress = itemState;
-            }
-
-            if (unlockedAt) {
-                const elapsed = Date.now() - unlockedAt;
-                // 1 HOUR Expiry Logic (60 minutes * 60 seconds * 1000 milliseconds)
-                if (elapsed >= 60 * 60 * 1000) { 
-                    progress = 0;
-                    unlockedAt = null;
-                }
-            }
-
-            const isUnlocked = progress >= required;
-            return { progress, unlockedAt, isUnlocked, required };
-        }
-
-        function renderLockedContent() {
-            const container = document.getElementById('locked-content-list');
-            container.innerHTML = '';
-
-            if (lockedContentData.length === 0) {
-                container.innerHTML = `<div class="text-center text-sm text-slate-400 py-10">কোনো কন্টেন্ট নেই</div>`;
-                return;
-            }
-
-            lockedContentData.forEach(item => {
-                const { progress, isUnlocked, required } = getContentStatus(item);
-                const percentage = Math.min((progress / required) * 100, 100);
-
-                const html = `
-                    <div onclick="openDetailModal('${item.id}')" class="bg-white rounded-3xl p-3 flex gap-4 items-center shadow-sm border border-rose-50 cursor-pointer active:scale-[0.98] transition-transform group relative overflow-hidden">
-                        <div class="relative w-28 h-20 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-100 shadow-sm">
-                            <img src="${item.thumbnail || 'https://placehold.co/200'}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                            ${isUnlocked 
-                                ? `<div class="absolute inset-0 bg-rose-500/30 flex items-center justify-center backdrop-blur-[2px]"><i class="fa-solid fa-unlock text-white text-lg drop-shadow-md"></i></div>`
-                                : ``
-                            }
-                        </div>
-                        
-                        <div class="flex-1 min-w-0 pr-1">
-                            <h4 class="font-bold text-slate-800 text-[14px] leading-snug line-clamp-2 mb-2">${item.title}</h4>
-                            
-                            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                                <div class="bg-gradient-to-r from-rose-400 to-orange-400 h-full rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
-                            </div>
-                            <div class="flex justify-between items-center mt-1">
-                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Progress</span>
-                                <span class="text-[10px] font-bold ${isUnlocked ? 'text-rose-500' : 'text-slate-500'} font-inter">${progress}/${required}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                container.insertAdjacentHTML('beforeend', html);
-            }
-        }
-
-        function openDetailModal(itemId) {
-            const item = lockedContentData.find(i => i.id === itemId);
-            if (!item) return showToast("কন্টেন্ট পাওয়া যায়নি", "error");
-
-            activeContentItem = item;
-            document.getElementById('detail-thumbnail').src = item.thumbnail || "https://placehold.co/100";
-            document.getElementById('detail-title').innerText = item.title;
-            
-            const shareLink = `https://t.me/${BOT_USERNAME}/${BOT_APP_NAME}?startapp=content_${item.id}`;
-            document.getElementById('detail-share-btn').setAttribute('onclick', `copyText('${shareLink}')`);
-            
-            renderDetailTasks(item);
-
-            const modal = document.getElementById('content-detail-modal');
-            const body = document.getElementById('detail-modal-body');
-            
-            modal.classList.remove('hidden');
-            setTimeout(() => body.classList.remove('translate-y-full'), 50);
-        }
-
-        function closeDetailModal() {
-            const modal = document.getElementById('content-detail-modal');
-            const body = document.getElementById('detail-modal-body');
-            
-            body.classList.add('translate-y-full');
             setTimeout(() => {
-                modal.classList.add('hidden');
-                activeContentItem = null;
-            }, 400);
-        }
+                let prefix = ["Exclusive", "Viral", "Trending", "Premium", "Hot", "Leaked", "Secret", "Must Watch"];
+                let suffix = ["Video", "Content", "Clip", "Footage", "Collection"];
+                let learnedWords = [];
 
-        function renderDetailTasks(item) {
-            const container = document.getElementById('detail-tasks-list');
-            container.innerHTML = '';
-            
-            const { progress, isUnlocked, required } = getContentStatus(item);
-            
-            for (let i = 0; i < required; i++) {
-                const isCompleted = i < progress;
-                const isActive = i === progress;
+                if(allExistingTitles.length > 0) {
+                    allExistingTitles.forEach(t => {
+                        let words = t.split(' ').filter(w => w.length > 3 && !prefix.includes(w) && !suffix.includes(w));
+                        learnedWords.push(...words);
+                    });
+                }
                 
-                let btnHtml = '';
-                if (isCompleted) {
-                    btnHtml = `<span class="text-rose-500 font-extrabold text-[12px]"><i class="fa-solid fa-circle-check"></i> ডান</span>`;
-                } else if (isActive) {
-                    btnHtml = `<button onclick="watchTaskAd('${item.id}')" class="bg-gradient-to-r from-rose-500 to-orange-500 text-white text-[11px] px-4 py-2 rounded-xl font-bold shadow-md shadow-rose-200 btn-press">কমপ্লিট করুন</button>`;
+                learnedWords = [...new Set(learnedWords)];
+                
+                let randomPrefix = prefix[Math.floor(Math.random() * prefix.length)];
+                let randomSuffix = suffix[Math.floor(Math.random() * suffix.length)];
+                
+                let finalTitle = "";
+                if(learnedWords.length > 2) {
+                    let randomLearned = learnedWords[Math.floor(Math.random() * learnedWords.length)];
+                    let formats = [
+                        `${randomPrefix} ${randomLearned} ${randomSuffix}`,
+                        `${randomPrefix}: ${randomLearned} Unlocked`,
+                        `New ${randomLearned} - ${randomPrefix} ${randomSuffix}`
+                    ];
+                    finalTitle = formats[Math.floor(Math.random() * formats.length)];
                 } else {
-                    btnHtml = `<span class="text-slate-300 font-bold text-[18px]"><i class="fa-solid fa-lock"></i></span>`;
+                    finalTitle = `${randomPrefix} Masterclass ${randomSuffix} 2026`;
                 }
 
-                const html = `
-                    <div class="p-3.5 rounded-2xl flex items-center justify-between border ${isActive ? 'bg-rose-50 border-rose-200 shadow-sm' : 'bg-slate-50 border-slate-100'} transition-all">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isCompleted ? 'bg-rose-100 text-rose-600' : isActive ? 'bg-rose-500 text-white shadow-md' : 'bg-slate-200 text-slate-400'}">
-                                ${i + 1}
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-slate-700 text-[13px]">অ্যাড টাস্ক</h4>
-                                <p class="text-[9px] text-slate-400">টাস্ক সম্পন্ন করুন</p>
-                            </div>
-                        </div>
-                        <div>${btnHtml}</div>
-                    </div>
+                document.getElementById('vidTitle').value = finalTitle;
+                btn.innerHTML = `<i class="fa-solid fa-brain"></i> AI Suggest`;
+            }, 600);
+        }
+
+        // --- Image Preview Logic ---
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('thumbPreview').src = e.target.result;
+                    document.getElementById('thumbPreview').style.display = 'block';
+                    document.getElementById('previewText').style.display = 'none';
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // --- Zone ID Memory (Auto-fill) ---
+        function saveZoneId(val) {
+            if(val) localStorage.setItem('wd_last_zone_id', val);
+        }
+
+        // --- Task Builder Logic ---
+        function addTaskRow(type) {
+            taskCounter++;
+            const container = document.getElementById('taskRowsContainer');
+            const row = document.createElement('div');
+            row.className = 'task-row';
+            row.id = `task-row-${taskCounter}`;
+
+            let badgeHtml = '';
+            let inputHtml = '';
+
+            if (type === 'ad') {
+                badgeHtml = `<span class="task-badge" style="background: rgba(14, 165, 233, 0.2); color: #0EA5E9;">AD</span>`;
+                let savedZone = localStorage.getItem('wd_last_zone_id') || '';
+                
+                inputHtml = `
+                    <input type="text" class="task-title" placeholder="Task Title" value="Watch Ad to Unlock" required>
+                    <input type="text" class="task-data" placeholder="Monetag Zone ID" value="${savedZone}" oninput="saveZoneId(this.value)" required>
                 `;
-                container.insertAdjacentHTML('beforeend', html);
-            }
-
-            // Progress Fill Button Logic
-            const percentage = Math.min((progress / required) * 100, 100);
-            const downloadBtn = document.getElementById('detail-download-btn');
-            const btnFill = document.getElementById('btn-progress-fill');
-            const btnText = document.getElementById('btn-text');
-
-            btnFill.style.width = `${percentage}%`;
-
-            if (isUnlocked) {
-                // বাটনটিকে ক্লিক করার উপযোগী করার জন্য সচল করা হলো
-                downloadBtn.disabled = false;
-
-                downloadBtn.className = "relative overflow-hidden w-full bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 btn-press btn-glow-hot transition-all duration-300 cursor-pointer shadow-lg";
-                btnText.innerHTML = `<i class="fa-solid fa-fire fa-bounce text-lg"></i> এখনই দেখুন`;
-                btnFill.style.opacity = "0"; 
-                
-                // ডাইনামিক এবং সেফ ক্লিক ইভেন্ট
-                downloadBtn.onclick = function() {
-                    const url = item.target_url;
-                    if (!url || url === "undefined") {
-                        showToast("কোনো লিংক পাওয়া যায়নি!", "error");
-                        return;
-                    }
-                    try {
-                        // চেক করা হচ্ছে অ্যাপটি টেলিগ্রামের ভেতরে চলছে কি না
-                        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
-                            tg.openLink(url);
-                        } else {
-                            window.open(url, '_blank');
-                        }
-                    } catch (e) {
-                        window.open(url, '_blank');
-                    }
-                };
+            } else if (type === 'telegram') {
+                badgeHtml = `<span class="task-badge" style="background: rgba(42, 171, 238, 0.2); color: #2AABEE;">TG</span>`;
+                inputHtml = `
+                    <input type="text" class="task-title" placeholder="Task Title" value="Join Telegram Channel" required>
+                    <input type="text" class="task-data" placeholder="Channel Link (t.me/...)" required>
+                `;
             } else {
-                // আনলক না হওয়া পর্যন্ত বাটনটি ক্লিক করা যাবে না
-                downloadBtn.disabled = true;
-
-                downloadBtn.className = "relative overflow-hidden w-full bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 cursor-not-allowed transition-all duration-300 border border-slate-200 shadow-inner";
-                btnFill.style.opacity = "1";
-                
-                if(percentage > 50) {
-                    btnText.className = "relative z-10 flex items-center gap-2 text-white drop-shadow-md";
-                } else {
-                    btnText.className = "relative z-10 flex items-center gap-2";
-                }
-
-                btnText.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> ${percentage.toFixed(0)}% আনলক হয়েছে...`;
-                downloadBtn.onclick = null; // ইভেন্ট রিমুভ করা হলো
+                badgeHtml = `<span class="task-badge" style="background: rgba(168, 85, 247, 0.2); color: #A855F7;">LINK</span>`;
+                inputHtml = `
+                    <input type="text" class="task-title" placeholder="Task Title" value="Visit Sponsor Link" required>
+                    <input type="text" class="task-data" placeholder="URL (https://...)" required>
+                `;
             }
+
+            row.innerHTML = `
+                ${badgeHtml}
+                <input type="hidden" class="task-type" value="${type}">
+                ${inputHtml}
+                <button class="btn-remove" onclick="document.getElementById('task-row-${taskCounter}').remove()"><i class="fa-solid fa-trash"></i></button>
+            `;
+            container.appendChild(row);
         }
 
-        async function watchTaskAd(itemId) {
-            // যদি আগে থেকেই একটি টাস্ক প্রসেসিংয়ে থাকে, তবে নতুন ক্লিক ইগনোর করবে
-            if (isProcessingTask) {
-                showToast("একটি টাস্ক ইতিমধ্যে চলছে, দয়া করে অপেক্ষা করুন!", "info");
-                return;
+        // --- Task Builder Helper for Populating Existing Tasks ---
+        function addTaskRowWithData(task) {
+            taskCounter++;
+            const container = document.getElementById('taskRowsContainer');
+            const row = document.createElement('div');
+            row.className = 'task-row';
+            row.id = `task-row-${taskCounter}`;
+
+            let badgeHtml = '';
+            let inputHtml = '';
+
+            if (task.type === 'ad') {
+                badgeHtml = `<span class="task-badge" style="background: rgba(14, 165, 233, 0.2); color: #0EA5E9;">AD</span>`;
+                inputHtml = `
+                    <input type="text" class="task-title" placeholder="Task Title" value="${task.title}" required>
+                    <input type="text" class="task-data" placeholder="Monetag Zone ID" value="${task.zone_id || ''}" required>
+                `;
+            } else if (task.type === 'telegram') {
+                badgeHtml = `<span class="task-badge" style="background: rgba(42, 171, 238, 0.2); color: #2AABEE;">TG</span>`;
+                inputHtml = `
+                    <input type="text" class="task-title" placeholder="Task Title" value="${task.title}" required>
+                    <input type="text" class="task-data" placeholder="Channel Link" value="${task.link || ''}" required>
+                `;
+            } else {
+                badgeHtml = `<span class="task-badge" style="background: rgba(168, 85, 247, 0.2); color: #A855F7;">LINK</span>`;
+                inputHtml = `
+                    <input type="text" class="task-title" placeholder="Task Title" value="${task.title}" required>
+                    <input type="text" class="task-data" placeholder="URL (https://...)" value="${task.link || ''}" required>
+                `;
             }
 
-            isProcessingTask = true; // টাস্ক শুরু হলো, লক করে দেওয়া হলো
-            showToast("অ্যাড লোড হচ্ছে, দয়া করে অপেক্ষা করুন...", "info");
+            row.innerHTML = `
+                ${badgeHtml}
+                <input type="hidden" class="task-type" value="${task.type}">
+                ${inputHtml}
+                <button class="btn-remove" onclick="document.getElementById('task-row-${taskCounter}').remove()"><i class="fa-solid fa-trash"></i></button>
+            `;
+            container.appendChild(row);
+        }
+
+        // --- Upload Image to ImgBB ---
+        async function uploadThumbnail(file) {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            if (data.success) return data.data.url;
+            else throw new Error("Image upload failed!");
+        }
+
+        // --- Set Form to Edit Mode ---
+        function editVideo(id) {
+            const video = loadedVideos[id];
+            if (!video) return;
+
+            editingVideoId = id;
+            currentThumbUrl = video.thumb_url;
+
+            // Change Layout Status
+            document.getElementById('formActionTitle').innerHTML = `<i class="fa-solid fa-pen-to-square"></i> Edit Content`;
+            document.getElementById('btnSave').innerHTML = `<i class="fa-solid fa-save"></i> Update Content`;
+            document.getElementById('btnCancelEdit').style.display = 'inline-flex';
+
+            // Populate Form values
+            document.getElementById('vidTitle').value = video.title;
+            document.getElementById('vidDownloadLink').value = video.download_link;
+
+            // Render Preview
+            document.getElementById('thumbPreview').src = video.thumb_url;
+            document.getElementById('thumbPreview').style.display = 'block';
+            document.getElementById('previewText').style.display = 'none';
+            document.getElementById('thumbFile').value = ''; // Reset file input
+
+            toggleType(video.type);
+
+            if (video.type === 'free') {
+                document.getElementById('taskRowsContainer').innerHTML = '';
+                if (video.tasks && video.tasks.length > 0) {
+                    video.tasks.forEach(task => {
+                        addTaskRowWithData(task);
+                    });
+                }
+            } else {
+                document.getElementById('priceStars').value = video.price_stars || '';
+                document.getElementById('priceUsdt').value = video.price_usdt || '';
+            }
+
+            // Scroll to Top smoothly
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- Cancel Edit Mode ---
+        function cancelEdit() {
+            editingVideoId = null;
+            currentThumbUrl = "";
+
+            document.getElementById('formActionTitle').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Create Content`;
+            document.getElementById('btnSave').innerHTML = `<i class="fa-solid fa-bolt"></i> Publish Content`;
+            document.getElementById('btnCancelEdit').style.display = 'none';
+
+            // Clear Form data
+            document.getElementById('vidTitle').value = '';
+            document.getElementById('vidDownloadLink').value = '';
+            document.getElementById('thumbFile').value = '';
+            document.getElementById('thumbPreview').style.display = 'none';
+            document.getElementById('previewText').style.display = 'block';
+            document.getElementById('taskRowsContainer').innerHTML = '';
+            document.getElementById('priceStars').value = '';
+            document.getElementById('priceUsdt').value = '';
+            toggleType('free');
+        }
+
+        // --- Save / Update Data on Firebase ---
+        async function saveVideoData() {
+            const title = document.getElementById('vidTitle').value.trim();
+            const downloadLink = document.getElementById('vidDownloadLink').value.trim();
+            const fileInput = document.getElementById('thumbFile');
+            const btn = document.getElementById('btnSave');
+
+            if (!title || !downloadLink) { alert("Please fill in Video Title and Download Link!"); return; }
+            if (!editingVideoId && fileInput.files.length === 0) { alert("Please select a thumbnail image!"); return; }
+
+            let dataToSave = {
+                title: title,
+                type: currentType,
+                download_link: downloadLink
+            };
+
+            // Set timestamps only during creation
+            if (!editingVideoId) {
+                dataToSave.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+            }
+
+            // Populate according to type
+            if (currentType === 'free') {
+                let tasksArray = [];
+                const taskRows = document.querySelectorAll('.task-row');
+                
+                for (let i = 0; i < taskRows.length; i++) {
+                    const type = taskRows[i].querySelector('.task-type').value;
+                    const taskTitle = taskRows[i].querySelector('.task-title').value.trim();
+                    const taskData = taskRows[i].querySelector('.task-data').value.trim();
+
+                    if (!taskTitle || !taskData) { alert("Please fill all task fields correctly!"); return; }
+
+                    let taskObj = { id: 't' + Math.random().toString(36).substr(2, 6), type: type, title: taskTitle };
+                    if (type === 'ad') taskObj.zone_id = taskData; else taskObj.link = taskData;
+                    tasksArray.push(taskObj);
+                }
+                dataToSave.tasks = tasksArray;
+                
+                // Clear old premium keys in firebase if we changed type
+                dataToSave.price_stars = firebase.firestore.FieldValue.delete();
+                dataToSave.price_usdt = firebase.firestore.FieldValue.delete();
+            } else {
+                let pStars = document.getElementById('priceStars').value || 50;
+                let pUsdt = document.getElementById('priceUsdt').value || 1.0;
+                dataToSave.price_stars = parseInt(pStars);
+                dataToSave.price_usdt = parseFloat(pUsdt);
+                
+                // Clear tasks key if we changed type
+                dataToSave.tasks = firebase.firestore.FieldValue.delete();
+            }
+
+            btn.disabled = true;
 
             try {
-                // ১. Monetag অ্যাড ট্রিগার করা (Gigapub বাদ দেওয়া হয়েছে)
-                const showFn = window['show_' + appSettings.monetagZoneId];
-                if (typeof showFn === 'function') {
-                    showFn(); 
+                // If a new thumbnail file was chosen
+                let finalThumbUrl = currentThumbUrl;
+                if (fileInput.files.length > 0) {
+                    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading Image...`;
+                    finalThumbUrl = await uploadThumbnail(fileInput.files[0]);
                 }
+                dataToSave.thumb_url = finalThumbUrl;
 
-                // ২. ১২ সেকেন্ড বাধ্যতামূলক প্রমিজ ডিলে (অ্যাড দেখার সময়টুকু অপেক্ষা করা)
-                await new Promise(resolve => setTimeout(resolve, 12000));
+                btn.innerHTML = `<i class="fa-solid fa-database"></i> Saving...`;
 
-                // ৩. ১২ সেকেন্ড পর ডাটাবেজ আপডেট হবে
-                showToast("যাচাই করা হচ্ছে...", "info");
+                if (editingVideoId) {
+                    await db.collection('unlockable_videos').doc(editingVideoId).update(dataToSave);
+                    alert("Content Updated Successfully!");
+                } else {
+                    await db.collection('unlockable_videos').add(dataToSave);
+                    alert("Content Published Successfully!");
+                }
                 
-                const uRef = db.collection('users').doc(currentUser.id.toString());
+                cancelEdit(); // Reset form/state
                 
-                // ডেটাবেজ থেকে রিয়েল-টাইম ডেটা ফেচ করে আপডেট করা (যাতে কোনো রেস কন্ডিশন না হয়)
-                const userDoc = await uRef.get();
-                let currentData = userDoc.exists ? userDoc.data() : userData;
-                
-                let unlockedItems = currentData.unlocked_items || {};
-                let currentProgress = unlockedItems[itemId]?.progress || 0;
-                let newProgress = currentProgress + 1; // শুধুমাত্র ১টি টাস্কই বৃদ্ধি পাবে
-                
-                const item = lockedContentData.find(i => i.id === itemId);
-                let unlockedAt = (newProgress >= parseInt(item.required_ads || 2)) ? Date.now() : null;
-                
-                unlockedItems[itemId] = { progress: newProgress, unlockedAt: unlockedAt };
-                
-                let updateData = {
-                    unlocked_items: unlockedItems,
-                    lastActive: new Date().toISOString()
-                };
-                
-                await uRef.update(updateData);
-                showToast("টাস্ক সফলভাবে সম্পন্ন হয়েছে!", "success");
-
-            } catch (e) {
-                console.error(e);
-                showToast("কোনো একটি সমস্যা হয়েছে, আবার চেষ্টা করুন!", "error");
+            } catch (error) {
+                console.error(error);
+                alert("Error: " + error.message);
             } finally {
-                // ৪. টাস্ক শেষ হলে লকটি খুলে দেওয়া হলো পরবর্তী ক্লিকের জন্য
-                isProcessingTask = false;
+                btn.disabled = false;
+                if (editingVideoId) {
+                    btn.innerHTML = `<i class="fa-solid fa-save"></i> Update Content`;
+                } else {
+                    btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Publish Content`;
+                }
             }
         }
 
-        function copyText(text) {
-            navigator.clipboard.writeText(text);
-            showToast("লিংক কপি করা হয়েছে!", "success");
+        // --- Load Existing Videos ---
+        function loadVideos() {
+            db.collection('unlockable_videos').orderBy('createdAt', 'desc').onSnapshot(snap => {
+                const list = document.getElementById('manageVideoList');
+                list.innerHTML = '';
+                allExistingTitles = [];
+                loadedVideos = {};
+
+                if (snap.empty) {
+                    list.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No content found.</div>';
+                    return;
+                }
+
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    loadedVideos[doc.id] = data; // store locally
+                    allExistingTitles.push(data.title);
+                    
+                    let isPremium = data.type === 'premium';
+                    let badge = isPremium ? '<span class="badge-mini-prem">VIP</span>' : '<span class="badge-mini-free">FREE</span>';
+                    let infoText = isPremium ? `<i class="fa-solid fa-star" style="color:var(--star-gold)"></i> ${data.price_stars}` : `${data.tasks ? data.tasks.length : 0} Tasks`;
+
+                    list.innerHTML += `
+                        <div class="video-item">
+                            <div class="vi-left">
+                                <img src="${data.thumb_url}" class="vi-thumb">
+                                <div>
+                                    <div class="vi-title">${data.title} ${badge}</div>
+                                    <div class="vi-tasks">${infoText}</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px; z-index: 2;">
+                                <button onclick="editVideo('${doc.id}')" style="background: rgba(14, 165, 233, 0.1); color: #0EA5E9; border: 1px solid rgba(14, 165, 233, 0.3); padding: 10px 14px; border-radius: 10px; cursor: pointer;"><i class="fa-solid fa-pen"></i></button>
+                                <button class="btn-del" onclick="deleteVideo('${doc.id}')" style="background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); padding: 10px 14px; border-radius: 10px; cursor: pointer;"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
         }
 
-        function showToast(msg, type) {
-            const t = document.getElementById('toast');
-            document.getElementById('toast-msg').innerText = msg;
-            const i = document.getElementById('toast-icon');
-            i.className = type === 'error' ? 'fa-solid fa-circle-exclamation text-rose-500 text-lg' :
-                          type === 'info' ? 'fa-solid fa-circle-info text-blue-400 text-lg' :
-                          'fa-solid fa-check-circle text-rose-400 text-lg';
-            
-            t.style.top = '25px';
-            setTimeout(() => t.style.top = '-80px', 3000);
+        // --- Delete Video ---
+        function deleteVideo(id) {
+            if(confirm("Are you sure you want to delete this content?")) {
+                if(editingVideoId === id) {
+                    cancelEdit();
+                }
+                db.collection('unlockable_videos').doc(id).delete()
+                    .catch(e => alert("Error: " + e.message));
+            }
         }
     </script>
 </body>
